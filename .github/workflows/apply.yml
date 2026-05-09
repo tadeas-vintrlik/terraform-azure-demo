@@ -29,27 +29,25 @@ jobs:
     - name: Setup terraform
       uses: hashicorp/setup-terraform@v3
 
-    - name: Get Runner IP
-      id: ip
-      run: echo "ipv4=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
+    - name: Azure Login (OIDC)
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Get Storage Account Name
+      run: |
+        # Find the SA in the specific resource group
+        SA_NAME=$(az storage account list --resource-group rg-tfstate --query "[0].name" -o tsv)
+        echo "SA_NAME=$SA_NAME" >> $GITHUB_ENV
 
     - name: Terraform Bootstrap
       working-directory: ./bootstrap
       run: |
-        terraform init
-        terraform apply -auto-approve -var="current_ip=${{ steps.ip.outputs.ipv4 }}"
-        
-        # Pass outputs to next step
-        echo "SA_NAME=$(terraform output -raw storage_account_name)" >> $GITHUB_ENV
-        echo "RG_NAME=$(terraform output -raw resource_group_name)" >> $GITHUB_ENV
-        echo "SC_NAME=$(terraform output -raw storage_container_name)" >> $GITHUB_ENV
-
-    - name: Terraform Prod
-      working-directory: ./prod
-      run: |
         terraform init \
-          -backend-config="resource_group_name=${{ env.RG_NAME }}" \
+          -backend-config="resource_group_name=rg-tfstate" \
           -backend-config="storage_account_name=${{ env.SA_NAME }}" \
-          -backend-config="container_name=${{ env.SC_NAME }}" \
+          -backend-config="container_name=tfstate" \
           -reconfigure
         terraform apply -auto-approve
