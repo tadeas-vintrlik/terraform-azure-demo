@@ -16,6 +16,7 @@ terraform {
   backend "azurerm" {
     key              = "bootstrap.tfstate"
     use_azuread_auth = true
+    use_oidc         = true
   }
 }
 
