@@ -11,6 +11,12 @@ terraform {
       version = "~> 3.8.0"
     }
   }
+
+  # Comment  this block during initial setup, then uploaded to azure
+  backend "azurerm" {
+    key              = "bootstrap.tfstate"
+    use_azuread_auth = true
+  }
 }
 
 provider "azurerm" {
