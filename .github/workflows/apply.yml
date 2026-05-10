@@ -51,3 +51,13 @@ jobs:
           -backend-config="container_name=tfstate" \
           -reconfigure
         terraform apply -auto-approve
+
+    - name: Terraform Prod
+      working-directory: ./prod
+      run: |
+        terraform init \
+          -backend-config="resource_group_name=rg-tfstate" \
+          -backend-config="storage_account_name=${{ env.SA_NAME }}" \
+          -backend-config="container_name=tfstate" \
+          -reconfigure
+        terraform apply -auto-approve
