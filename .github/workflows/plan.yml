@@ -1,0 +1,80 @@
+name: 'Terraform validate and  plan'
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# Permissions for OIDC auth
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write  # To post output to PR
+
+jobs:
+  terraform-plan:
+    name: 'Terraform Plan'
+    runs-on: ubuntu-latest
+    env:
+      ARM_CLIENT_ID: "${{ secrets.AZURE_CLIENT_ID }}"
+      ARM_SUBSCRIPTION_ID: "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ secrets.AZURE_TENANT_ID }}"
+      ARM_USE_OIDC: true
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Setup terraform
+      uses: hashicorp/setup-terraform@v4
+      with:
+        terraform_version: "1.15.2"
+
+    - name: Azure Login (OIDC)
+      uses: azure/login@v3
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Get Storage Account Name
+      run: |
+        SA_NAME=$(az storage account list --resource-group rg-tfstate --query "[0].name" -o tsv)
+        echo "SA_NAME=$SA_NAME" >> $GITHUB_ENV
+
+    - name: Terraform Format Check
+      run: terraform fmt -check -recursive
+
+    - name: Terraform Bootstrap Init
+      working-directory: ./bootstrap
+      run: |
+        terraform init \
+          -backend-config="resource_group_name=rg-tfstate" \
+          -backend-config="storage_account_name=${{ env.SA_NAME }}" \
+          -backend-config="container_name=tfstate" \
+          -reconfigure
+
+    - name: Terraform Bootstrap Validate
+      working-directory: ./bootstrap
+      run: terraform validate
+
+    - name: Terraform Bootstrap Plan
+      working-directory: ./bootstrap
+      run: terraform plan -input=false
+
+    - name: Terraform Prod Init
+      working-directory: ./prod
+      run: |
+        terraform init \
+          -backend-config="resource_group_name=rg-tfstate" \
+          -backend-config="storage_account_name=${{ env.SA_NAME }}" \
+          -backend-config="container_name=tfstate" \
+          -reconfigure
+
+    - name: Terraform Prod Validate
+      working-directory: ./prod
+      run: terraform validate
+
+    - name: Terraform Prod Plan
+      working-directory: ./prod
+      run: terraform plan -input=false
