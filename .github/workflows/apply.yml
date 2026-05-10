@@ -53,7 +53,7 @@ jobs:
 
     - name: Terraform Bootstrap Plan
       working-directory: ./bootstrap
-      run: terraform plan -out=bootstrap.tfplan
+      run: terraform plan -input=false -out=bootstrap.tfplan
 
     - name: Terraform Bootstrap Apply
       working-directory: ./bootstrap
@@ -70,7 +70,7 @@ jobs:
 
     - name: Terraform Prod Plan
       working-directory: ./prod
-      run: terraform plan -out=prod.tfplan
+      run: terraform plan -input=false -out=prod.tfplan
 
     - name: Terraform Prod Apply
       working-directory: ./prod
