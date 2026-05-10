@@ -1,18 +1,16 @@
 # Terraform Azure Demo
 
-A demo I did to learn and explore terraform to setup infrastructure in Azure. It also uses GitHub Actions to automated and continously deploy and modify the infrastructure.
+Exploration of IaC Azure setup using Terraform.
 
-Utilizes a secretless deployment using OIDC and Workload Identity Federation eliminating the need for long-lived secrets.
+## Key Architecture Points
 
-## Key architecture points
-
- - **State Management**: remote backend in Azure Blob Storage with version and locks to prevent accidental deletion
-- **Security**: no long-lived secrets required, least-privelege RBAC (this is as the cost of some automation convenience and a bit more involved initial manual setup is required).
-- **Automation**: continuous and automated deployment
+ - **State Management**: remote backend in Azure Blob Storage with versioning and locks to prevent accidental deletion
+- **Security**: no long-lived secrets required uses Workload Identity Federation (with OIDC), least-privelege RBAC (this is at the cost of some automation convenience and a bit more involved initial manual setup is required).
+- **Automation**: continuous and automated deployment using GitHub Actions
 
 ## Setup
 
-To solve the Chicken and Egg (since we will be storing state in the infrastructure we create) and to setup with security in mind as dissuced above it requries this initial manual setup:
+It requires some initial manual setup to solve the Chicken and Egg problem with Terraform state stored in cloud:
 
 1. Local setup
 
