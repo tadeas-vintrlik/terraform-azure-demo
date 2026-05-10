@@ -42,7 +42,7 @@ jobs:
         SA_NAME=$(az storage account list --resource-group rg-tfstate --query "[0].name" -o tsv)
         echo "SA_NAME=$SA_NAME" >> $GITHUB_ENV
 
-    - name: Terraform Bootstrap
+    - name: Terraform Bootstrap Init
       working-directory: ./bootstrap
       run: |
         terraform init \
@@ -50,7 +50,14 @@ jobs:
           -backend-config="storage_account_name=${{ env.SA_NAME }}" \
           -backend-config="container_name=tfstate" \
           -reconfigure
-        terraform apply -auto-approve
+
+    - name: Terraform Bootstrap Plan
+      working-directory: ./bootstrap
+      run: terraform plan -out=bootstrap.tfplan
+
+    - name: Terraform Bootstrap Apply
+      working-directory: ./bootstrap
+      run: terraform apply -input=false bootstrap.tfplan
 
     - name: Terraform Prod
       working-directory: ./prod
@@ -60,4 +67,11 @@ jobs:
           -backend-config="storage_account_name=${{ env.SA_NAME }}" \
           -backend-config="container_name=tfstate" \
           -reconfigure
-        terraform apply -auto-approve
+
+    - name: Terraform Prod Plan
+      working-directory: ./prod
+      run: terraform plan -out=prod.tfplan
+
+    - name: Terraform Prod Apply
+      working-directory: ./prod
+      run: terraform apply -input=false prod.tfplan
